@@ -5,38 +5,23 @@ import '../domain/auth_models.dart';
 part 'auth_api_service.freezed.dart';
 part 'auth_api_service.g.dart';
 
+/// Service API pour l'authentification - wraps Dio directement (pattern "Dio Service")
 class AuthApiService {
   final Dio _dio;
-  
+
   AuthApiService(this._dio);
 
   Future<AuthResponse> login(LoginRequest request) async {
-    await Future.delayed(const Duration(seconds: 1));
-    return AuthResponse(
-      token: 'mock_jwt_token_123',
-      member: CoopMember(
-        id: 'member_1',
-        fullName: 'Kossi Akpovi',
-        phone: request.phone,
-        role: 'president',
-        cooperativeId: 'coop_togo_01',
-        cooperativeName: 'Coopérative Agricole de Kpalimé',
-        joinedAt: DateTime.now(),
-      ),
+    final response = await _dio.post(
+      '/auth/login',
+      data: request.toJson(),
     );
+    return AuthResponse.fromJson(response.data as Map<String, dynamic>);
   }
 
   Future<CoopMember> getProfile() async {
-    await Future.delayed(const Duration(seconds: 1));
-    return CoopMember(
-      id: 'member_1',
-      fullName: 'Kossi Akpovi',
-      phone: '90000000',
-      role: 'president',
-      cooperativeId: 'coop_togo_01',
-      cooperativeName: 'Coopérative Agricole de Kpalimé',
-      joinedAt: DateTime.now(),
-    );
+    final response = await _dio.get('/api/profile');
+    return CoopMember.fromJson(response.data as Map<String, dynamic>);
   }
 }
 

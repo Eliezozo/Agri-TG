@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../core/utils/formatters.dart';
@@ -11,6 +12,58 @@ class VoteDetailScreen extends ConsumerWidget {
   final String id;
 
   const VoteDetailScreen({super.key, required this.id});
+
+  Future<void> _onCastVote(
+    BuildContext context,
+    WidgetRef ref,
+    String choice,
+  ) async {
+    final result = await ref.read(voteCasterProvider.notifier).castVote(id, choice);
+
+    if (!context.mounted) return;
+
+    if (result != null) {
+      final txHash = result.txHash;
+      final shortHash = '0x${txHash.substring(2, 8)}...';
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          backgroundColor: AppColors.primary,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          content: Text(
+            'Vote enregistré · $shortHash',
+            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+          ),
+          action: SnackBarAction(
+            label: 'Voir sur Celoscan',
+            textColor: Colors.white70,
+            onPressed: () async {
+              final url = Uri.parse('https://alfajores.celoscan.io/tx/$txHash');
+              if (await canLaunchUrl(url)) {
+                await launchUrl(url, mode: LaunchMode.externalApplication);
+              }
+            },
+          ),
+          duration: const Duration(seconds: 8),
+        ),
+      );
+    } else {
+      // Affiche une erreur si le vote a échoué
+      final error = ref.read(voteCasterProvider).error;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          backgroundColor: AppColors.danger,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          content: Text(
+            error?.toString() ?? 'Erreur lors du vote.',
+            style: const TextStyle(color: Colors.white),
+          ),
+        ),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -54,16 +107,32 @@ class VoteDetailScreen extends ConsumerWidget {
                   children: [
                     Expanded(
                       child: ElevatedButton(
-                        style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary, foregroundColor: Colors.white),
-                        onPressed: voteCasterState.isLoading ? null : () => ref.read(voteCasterProvider.notifier).castVote(id, 'for'),
-                        child: const Text('Pour'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.primary,
+                          foregroundColor: Colors.white,
+                        ),
+                        onPressed: voteCasterState.isLoading
+                            ? null
+                            : () => _onCastVote(context, ref, 'for'),
+                        child: voteCasterState.isLoading
+                            ? const SizedBox(
+                                height: 18,
+                                width: 18,
+                                child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                              )
+                            : const Text('Pour'),
                       ),
                     ),
                     const SizedBox(width: 12),
                     Expanded(
                       child: ElevatedButton(
-                        style: ElevatedButton.styleFrom(backgroundColor: AppColors.danger, foregroundColor: Colors.white),
-                        onPressed: voteCasterState.isLoading ? null : () => ref.read(voteCasterProvider.notifier).castVote(id, 'against'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.danger,
+                          foregroundColor: Colors.white,
+                        ),
+                        onPressed: voteCasterState.isLoading
+                            ? null
+                            : () => _onCastVote(context, ref, 'against'),
                         child: const Text('Contre'),
                       ),
                     ),
@@ -73,8 +142,10 @@ class VoteDetailScreen extends ConsumerWidget {
                 SizedBox(
                   width: double.infinity,
                   child: OutlinedButton(
-                    onPressed: voteCasterState.isLoading ? null : () => ref.read(voteCasterProvider.notifier).castVote(id, 'abstain'),
-                    child: const Text('S\'abstenir'),
+                    onPressed: voteCasterState.isLoading
+                        ? null
+                        : () => _onCastVote(context, ref, 'abstain'),
+                    child: const Text("S'abstenir"),
                   ),
                 ),
               ],

@@ -6,9 +6,11 @@ part of 'votes_provider.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$votesHash() => r'651dccb2c4069da905461dea423a8c2d03ef9476';
+String _$votesHash() => r'b05996b25f11b5fa65c0f7b3d812f60a37cfadd8';
 
-/// See also [votes].
+/// Provider de la liste des votes avec cache Hive
+///
+/// Copied from [votes].
 @ProviderFor(votes)
 final votesProvider = AutoDisposeFutureProvider<List<Vote>>.internal(
   votes,
@@ -20,7 +22,7 @@ final votesProvider = AutoDisposeFutureProvider<List<Vote>>.internal(
 );
 
 typedef VotesRef = AutoDisposeFutureProviderRef<List<Vote>>;
-String _$voteDetailHash() => r'80d73e063ce580b826c5cf9bade2d58a0997b456';
+String _$voteDetailHash() => r'd3b5a797d1a7f169e21d8e268ea61e6ec6af178d';
 
 /// Copied from Dart SDK
 class _SystemHash {
@@ -43,16 +45,24 @@ class _SystemHash {
   }
 }
 
-/// See also [voteDetail].
+/// Provider du détail d'un vote
+///
+/// Copied from [voteDetail].
 @ProviderFor(voteDetail)
 const voteDetailProvider = VoteDetailFamily();
 
-/// See also [voteDetail].
+/// Provider du détail d'un vote
+///
+/// Copied from [voteDetail].
 class VoteDetailFamily extends Family<AsyncValue<Vote>> {
-  /// See also [voteDetail].
+  /// Provider du détail d'un vote
+  ///
+  /// Copied from [voteDetail].
   const VoteDetailFamily();
 
-  /// See also [voteDetail].
+  /// Provider du détail d'un vote
+  ///
+  /// Copied from [voteDetail].
   VoteDetailProvider call(
     String voteId,
   ) {
@@ -85,9 +95,13 @@ class VoteDetailFamily extends Family<AsyncValue<Vote>> {
   String? get name => r'voteDetailProvider';
 }
 
-/// See also [voteDetail].
+/// Provider du détail d'un vote
+///
+/// Copied from [voteDetail].
 class VoteDetailProvider extends AutoDisposeFutureProvider<Vote> {
-  /// See also [voteDetail].
+  /// Provider du détail d'un vote
+  ///
+  /// Copied from [voteDetail].
   VoteDetailProvider(
     String voteId,
   ) : this._internal(
@@ -169,12 +183,15 @@ class _VoteDetailProviderElement extends AutoDisposeFutureProviderElement<Vote>
   String get voteId => (origin as VoteDetailProvider).voteId;
 }
 
-String _$voteCasterHash() => r'0b7b6e095769de9db889a1f7682693b7651ce467';
+String _$voteCasterHash() => r'0133d01376b72d8c70ca522edaf8d9cc913f3bb1';
 
-/// See also [VoteCaster].
+/// Notifier gérant la soumission d'un vote
+/// Retourne un VoteCastResult avec le txHash pour affichage dans la UI
+///
+/// Copied from [VoteCaster].
 @ProviderFor(VoteCaster)
-final voteCasterProvider =
-    AutoDisposeAsyncNotifierProvider<VoteCaster, void>.internal(
+final voteCasterProvider = AutoDisposeNotifierProvider<VoteCaster,
+    AsyncValue<VoteCastResult?>>.internal(
   VoteCaster.new,
   name: r'voteCasterProvider',
   debugGetCreateSourceHash:
@@ -183,6 +200,6 @@ final voteCasterProvider =
   allTransitiveDependencies: null,
 );
 
-typedef _$VoteCaster = AutoDisposeAsyncNotifier<void>;
+typedef _$VoteCaster = AutoDisposeNotifier<AsyncValue<VoteCastResult?>>;
 // ignore_for_file: type=lint
 // ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member
