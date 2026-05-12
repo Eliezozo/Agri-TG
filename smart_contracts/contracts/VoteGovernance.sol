@@ -5,66 +5,66 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 
 contract VoteGovernance is Ownable {
     struct Vote {
-        string title;
+        string titre;
         string description;
-        uint256 threshold;
-        uint256 closingDate;
-        bool status;
+        uint256 seuil;
+        uint256 dateCloture;
+        bool statut;
     }
 
-    mapping(uint256 => Vote) public votes;
-    mapping(uint256 => mapping(address => uint8)) public hasVoted; // voteId => address => choice
+    mapping(uint256 => Vote) public voteSessions;
+    mapping(uint256 => mapping(address => uint8)) public votes; // voteId => member => choice
     mapping(uint256 => mapping(uint8 => uint256)) public voteCounts; // voteId => choice => count
 
     uint256 public nextVoteId;
 
-    event VoteCreated(uint256 indexed voteId, string title, uint256 closingDate);
     event VoteCast(uint256 indexed voteId, address indexed voter, uint8 choice);
     event VoteFinalized(uint256 indexed voteId, bool passed);
 
     constructor() Ownable(msg.sender) {}
 
     function createVote(
-        string memory title,
+        string memory titre,
         string memory description,
-        uint256 threshold,
-        uint256 closingDate
+        uint256 seuil,
+        uint256 dateCloture
     ) external onlyOwner {
         uint256 voteId = nextVoteId++;
-        votes[voteId] = Vote({
-            title: title,
+        voteSessions[voteId] = Vote({
+            titre: titre,
             description: description,
-            threshold: threshold,
-            closingDate: closingDate,
-            status: true // true = active, false = finalized
+            seuil: seuil,
+            dateCloture: dateCloture,
+            statut: true
         });
-        emit VoteCreated(voteId, title, closingDate);
     }
 
-    function castVote(uint256 voteId, uint8 choice) external {
-        require(votes[voteId].status == true, "Vote is not active");
-        require(block.timestamp <= votes[voteId].closingDate, "Vote is closed");
-        require(hasVoted[voteId][msg.sender] == 0, "Already voted");
-        require(choice > 0, "Invalid choice, must be > 0");
+    // Note: The prompt asks for castVote(voteId, choice) public.
+    // But backend integration specifies castVote(voteId, choice, memberAddress).
+    // To allow the backend to relay votes while respecting the "1 vote per address" rule:
+    function castVote(uint256 voteId, uint8 choice, address memberAddress) external onlyOwner {
+        require(voteSessions[voteId].statut == true, "Le vote n'est pas actif");
+        require(block.timestamp <= voteSessions[voteId].dateCloture, "Le vote est clos");
+        require(votes[voteId][memberAddress] == 0, "A deja vote");
+        require(choice >= 1 && choice <= 3, "Choix invalide (1=Pour, 2=Contre, 3=Abstention)");
 
-        hasVoted[voteId][msg.sender] = choice;
+        votes[voteId][memberAddress] = choice;
         voteCounts[voteId][choice]++;
 
-        emit VoteCast(voteId, msg.sender, choice);
+        emit VoteCast(voteId, memberAddress, choice);
     }
 
     function finalizeVote(uint256 voteId) external onlyOwner {
-        require(votes[voteId].status == true, "Already finalized");
-        require(block.timestamp > votes[voteId].closingDate, "Voting still open");
+        require(voteSessions[voteId].statut == true, "Deja finalise");
+        require(block.timestamp > voteSessions[voteId].dateCloture, "Vote encore ouvert");
         
-        votes[voteId].status = false;
+        voteSessions[voteId].statut = false;
         
-        // Let's assume choice 1 is YES. If yes votes >= threshold, it passed.
-        bool passed = voteCounts[voteId][1] >= votes[voteId].threshold;
+        bool passed = voteCounts[voteId][1] >= voteSessions[voteId].seuil;
         emit VoteFinalized(voteId, passed);
     }
 
-    function getResults(uint256 voteId) external view returns (uint256 yesVotes, uint256 noVotes) {
-        return (voteCounts[voteId][1], voteCounts[voteId][2]);
+    function getResults(uint256 voteId) external view returns (uint256 pour, uint256 contre, uint256 abstention) {
+        return (voteCounts[voteId][1], voteCounts[voteId][2], voteCounts[voteId][3]);
     }
 }
