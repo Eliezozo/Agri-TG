@@ -38,6 +38,8 @@ dependencies:
   # Navigation
   go_router: ^13.2.0
 
+  google_fonts: ^6.1.0
+
   # Réseau
   dio: ^5.4.3
   retrofit: ^4.1.0
