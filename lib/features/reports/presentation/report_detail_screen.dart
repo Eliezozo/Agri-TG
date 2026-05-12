@@ -15,7 +15,7 @@ import '../data/reports_provider.dart';
 import '../domain/report_model.dart';
 
 class ReportDetailScreen extends ConsumerStatefulWidget {
-  final String id;
+  final String id; // This is the month (e.g. 2026-05)
 
   const ReportDetailScreen({super.key, required this.id});
 
@@ -29,103 +29,101 @@ class _ReportDetailScreenState extends ConsumerState<ReportDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final reportAsync = ref.watch(reportsProvider);
+    final reportAsync = ref.watch(reportDetailProvider(widget.id));
 
     return Scaffold(
       appBar: AppBar(title: const Text('Détail du rapport')),
       body: reportAsync.when(
-        data: (reports) {
-          final report = reports.firstWhere((r) => r.id == widget.id, orElse: () => reports.first);
-
-          return SingleChildScrollView(
-            padding: const EdgeInsets.all(24.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Header avec badge blockchain
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      'Rapport ${report.month}',
-                      style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
-                    ),
+        data: (report) => SingleChildScrollView(
+          padding: const EdgeInsets.all(24.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Header
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Rapport ${report.month}',
+                    style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+                  ),
+                  if (report.blockchainHash.isNotEmpty)
                     BlockchainBadge(txHash: report.blockchainHash),
-                  ],
-                ),
-                const SizedBox(height: 24),
+                ],
+              ),
+              const SizedBox(height: 24),
 
-                // Carte des chiffres
-                Card(
-                  child: Padding(
-                    padding: const EdgeInsets.all(16.0),
-                    child: Column(
-                      children: [
-                        _buildRow('Total Entrées', formatAmount(report.totalIn), AppColors.success),
-                        const Divider(),
-                        _buildRow('Total Sorties', formatAmount(report.totalOut), AppColors.danger),
-                        const Divider(),
-                        _buildRow('Transactions', '${report.transactionCount}', AppColors.textPrimary),
-                      ],
-                    ),
+              // Stats Cards
+              Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Column(
+                    children: [
+                      _buildRow('Total Entrées', formatAmount(report.totalIn), AppColors.success),
+                      const Divider(),
+                      _buildRow('Total Sorties', formatAmount(report.totalOut), AppColors.danger),
+                      const Divider(),
+                      _buildRow('Solde Mensuel', formatAmount(report.balance), AppColors.textPrimary),
+                    ],
                   ),
                 ),
-                const SizedBox(height: 24),
+              ),
+              const SizedBox(height: 32),
 
-                // Graphique
-                const Text('Aperçu Graphique', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                const SizedBox(height: 16),
-                SizedBox(
-                  height: 180,
-                  child: PieChart(
-                    PieChartData(
-                      sectionsSpace: 2,
-                      centerSpaceRadius: 40,
-                      sections: [
-                        PieChartSectionData(
-                          color: AppColors.success,
-                          value: report.totalIn,
-                          title: 'Entrées',
-                          radius: 50,
-                          titleStyle: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.white),
-                        ),
-                        PieChartSectionData(
-                          color: AppColors.danger,
-                          value: report.totalOut,
-                          title: 'Sorties',
-                          radius: 50,
-                          titleStyle: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.white),
-                        ),
-                      ],
-                    ),
+              const Text('Répartition par catégorie', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 24),
+
+              // Simple Pie Chart
+              SizedBox(
+                height: 200,
+                child: PieChart(
+                  PieChartData(
+                    sections: [
+                      PieChartSectionData(
+                        color: AppColors.primary,
+                        value: report.totalIn,
+                        title: 'Entrées',
+                        radius: 50,
+                        titleStyle: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                      ),
+                      PieChartSectionData(
+                        color: AppColors.danger,
+                        value: report.totalOut.abs(),
+                        title: 'Sorties',
+                        radius: 50,
+                        titleStyle: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                      ),
+                    ],
                   ),
                 ),
-                const SizedBox(height: 32),
+              ),
+              const SizedBox(height: 40),
 
-                // ─── Section Preuve blockchain ───
-                _buildBlockchainSection(context, report),
-                const SizedBox(height: 24),
+              // ─── Section Preuve blockchain ───
+              _buildBlockchainSection(context, report),
+              const SizedBox(height: 32),
 
-                // Boutons d'action
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton.icon(
-                    icon: _generating
-                        ? const SizedBox(height: 16, width: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                        : const Icon(Icons.download_rounded),
-                    label: Text(_generating ? 'Génération...' : 'Télécharger PDF'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primary,
-                      foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                    ),
-                    onPressed: _generating ? null : () => _printPdf(report),
+              // Download Button
+              SizedBox(
+                width: double.infinity,
+                height: 50,
+                child: ElevatedButton.icon(
+                  icon: _generating
+                    ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                    : const Icon(Icons.picture_as_pdf),
+                  label: Text(_generating ? 'Génération...' : 'Télécharger le rapport certifié'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                   ),
+                  onPressed: _generating ? null : () => _generateAndPrintPdf(report),
                 ),
-              ],
-            ),
-          );
-        },
+              ),
+              const SizedBox(height: 20),
+            ],
+          ),
+        ),
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => Center(child: Text('Erreur: $e')),
       ),
@@ -134,55 +132,39 @@ class _ReportDetailScreenState extends ConsumerState<ReportDetailScreen> {
 
   Widget _buildBlockchainSection(BuildContext context, MonthlyReport report) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: AppColors.bgCard,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
+        border: Border.all(color: AppColors.primary.withOpacity(0.2)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Row(
             children: [
-              Icon(Icons.shield_outlined, size: 16, color: AppColors.primaryLight),
+              Icon(Icons.verified_outlined, color: AppColors.primaryLight, size: 20),
               SizedBox(width: 8),
-              Text(
-                'Ancrage Blockchain',
-                style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.textPrimary, fontSize: 14),
-              ),
+              Text('Certification Blockchain', style: TextStyle(fontWeight: FontWeight.bold)),
             ],
           ),
-          const SizedBox(height: 14),
+          const SizedBox(height: 16),
 
-          // Hash PDF
           if (_pdfHash != null) ...[
-            _buildHashRow(context, 'Hash SHA-256 du PDF', _pdfHash!),
-            const SizedBox(height: 10),
+             _buildHashInfo(context, 'HASH DU FICHIER (SHA256)', _pdfHash!),
+             const SizedBox(height: 12),
           ],
 
-          // Hash blockchain
-          _buildHashRow(context, 'Hash d\'ancrage (blockchain)', report.blockchainHash),
-          const SizedBox(height: 14),
+          _buildHashInfo(context, 'HASH D\'ANCRAGE (TRANSACTION)', report.blockchainHash),
 
-          // Bouton vérifier
+          const SizedBox(height: 20),
+
           SizedBox(
             width: double.infinity,
-            child: OutlinedButton.icon(
-              icon: const Icon(Icons.verified_user_rounded, size: 15),
-              label: const Text('Vérifier l\'authenticité sur Celoscan'),
-              style: OutlinedButton.styleFrom(
-                foregroundColor: AppColors.primaryLight,
-                side: const BorderSide(color: AppColors.primaryLight),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                textStyle: const TextStyle(fontSize: 12),
-              ),
-              onPressed: () async {
-                final url = Uri.parse('https://alfajores.celoscan.io/tx/${report.blockchainHash}');
-                if (await canLaunchUrl(url)) {
-                  await launchUrl(url, mode: LaunchMode.externalApplication);
-                }
-              },
+            child: TextButton.icon(
+              icon: const Icon(Icons.open_in_new, size: 14),
+              label: const Text('Vérifier l\'authenticité sur Celoscan', style: TextStyle(fontSize: 12)),
+              onPressed: () => _launchCeloscan(report.blockchainHash),
             ),
           ),
         ],
@@ -190,11 +172,11 @@ class _ReportDetailScreenState extends ConsumerState<ReportDetailScreen> {
     );
   }
 
-  Widget _buildHashRow(BuildContext context, String label, String hash) {
+  Widget _buildHashInfo(BuildContext context, String label, String hash) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: const TextStyle(fontSize: 11, color: AppColors.textMuted)),
+        Text(label, style: const TextStyle(fontSize: 10, color: AppColors.textMuted, fontWeight: FontWeight.bold)),
         const SizedBox(height: 4),
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
@@ -211,25 +193,14 @@ class _ReportDetailScreenState extends ConsumerState<ReportDetailScreen> {
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
-              GestureDetector(
-                onTap: () async {
-                  await Clipboard.setData(ClipboardData(text: hash));
-                  if (context.mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: const Text('Hash copié'),
-                        backgroundColor: AppColors.primary,
-                        behavior: SnackBarBehavior.floating,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                        duration: const Duration(seconds: 2),
-                      ),
-                    );
-                  }
+              IconButton(
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(),
+                icon: const Icon(Icons.copy, size: 14, color: AppColors.primaryLight),
+                onPressed: () {
+                  Clipboard.setData(ClipboardData(text: hash));
+                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Copié !'), duration: Duration(seconds: 1)));
                 },
-                child: const Padding(
-                  padding: EdgeInsets.only(left: 8),
-                  child: Icon(Icons.copy_rounded, size: 14, color: AppColors.primaryLight),
-                ),
               ),
             ],
           ),
@@ -251,113 +222,79 @@ class _ReportDetailScreenState extends ConsumerState<ReportDetailScreen> {
     );
   }
 
-  Future<void> _printPdf(MonthlyReport report) async {
+  Future<void> _generateAndPrintPdf(MonthlyReport report) async {
     setState(() => _generating = true);
 
     try {
       final pdf = pw.Document();
 
+      // Calculate a dummy PDF hash first to show in the PDF itself if possible,
+      // but usually the hash is calculated ON the final bytes.
+      // We will include the blockchain anchor hash in the PDF footer.
+
       pdf.addPage(
         pw.MultiPage(
-          build: (pw.Context ctx) => [
-            pw.Header(
-              level: 0,
-              child: pw.Text('Rapport Mensuel - Agri-TG', style: pw.TextStyle(fontSize: 24, fontWeight: pw.FontWeight.bold)),
+          build: (pw.Context context) => [
+            pw.Header(level: 0, child: pw.Text('RAPPORT MENSUEL AGRI-TG')),
+            pw.SizedBox(height: 20),
+            pw.Text('Mois : ${report.month}'),
+            pw.Divider(),
+            pw.SizedBox(height: 10),
+            pw.Row(
+              mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+              children: [pw.Text('Total Entrées'), pw.Text('${report.totalIn} FCFA')],
             ),
-            pw.SizedBox(height: 20),
-            pw.Text('Mois: ${report.month}', style: pw.TextStyle(fontSize: 18)),
-            pw.SizedBox(height: 20),
+            pw.Row(
+              mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+              children: [pw.Text('Total Sorties'), pw.Text('${report.totalOut} FCFA')],
+            ),
+            pw.SizedBox(height: 10),
             pw.Divider(),
             pw.Row(
               mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
               children: [
-                pw.Text('Total Entrées:', style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
-                pw.Text('${report.totalIn} FCFA'),
+                pw.Text('Bilan', style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
+                pw.Text('${report.balance} FCFA', style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
               ],
             ),
-            pw.SizedBox(height: 8),
-            pw.Row(
-              mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-              children: [
-                pw.Text('Total Sorties:', style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
-                pw.Text('${report.totalOut} FCFA'),
-              ],
-            ),
-            pw.SizedBox(height: 8),
-            pw.Row(
-              mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-              children: [
-                pw.Text('Nombre de transactions:'),
-                pw.Text('${report.transactionCount}'),
-              ],
-            ),
-            pw.SizedBox(height: 8),
-            pw.Row(
-              mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-              children: [
-                pw.Text('Solde:'),
-                pw.Text('${report.balance} FCFA'),
-              ],
-            ),
+            pw.SizedBox(height: 50),
+            pw.Text('Ce rapport est certifié par la blockchain Celo.', style: pw.TextStyle(fontSize: 10, color: PdfColors.grey700)),
           ],
-          // Footer avec les deux hash blockchain
-          footer: (pw.Context ctx) => pw.Container(
-            decoration: const pw.BoxDecoration(
-              border: pw.Border(top: pw.BorderSide(width: 0.5, color: PdfColors.grey400)),
-            ),
-            padding: const pw.EdgeInsets.only(top: 8),
+          footer: (pw.Context context) => pw.Container(
+            alignment: pw.Alignment.centerRight,
+            margin: const pw.EdgeInsets.only(top: 10),
             child: pw.Column(
-              crossAxisAlignment: pw.CrossAxisAlignment.start,
+              crossAxisAlignment: pw.CrossAxisAlignment.end,
               children: [
-                pw.Text(
-                  '── Preuve d\'immuabilité blockchain ──',
-                  style: pw.TextStyle(fontSize: 8, color: PdfColors.grey600, fontWeight: pw.FontWeight.bold),
-                ),
-                pw.SizedBox(height: 4),
-                pw.Row(
-                  children: [
-                    pw.Text('Hash SHA-256 PDF: ', style: pw.TextStyle(fontSize: 7, fontWeight: pw.FontWeight.bold)),
-                    pw.Expanded(
-                      child: pw.Text(
-                        _pdfHash ?? '(calculé à la génération)',
-                        style: const pw.TextStyle(fontSize: 7),
-                      ),
-                    ),
-                  ],
-                ),
-                pw.SizedBox(height: 2),
-                pw.Row(
-                  children: [
-                    pw.Text('Hash Blockchain (Celo): ', style: pw.TextStyle(fontSize: 7, fontWeight: pw.FontWeight.bold)),
-                    pw.Expanded(
-                      child: pw.Text(report.blockchainHash, style: const pw.TextStyle(fontSize: 7)),
-                    ),
-                  ],
-                ),
-                pw.SizedBox(height: 2),
-                pw.Text(
-                  'Ce document est ancré sur la blockchain Celo Alfajores et ne peut pas être modifié.',
-                  style: const pw.TextStyle(fontSize: 6, color: PdfColors.grey500),
-                ),
+                pw.Text('Blockchain Anchor Hash: ${report.blockchainHash}', style: const pw.TextStyle(fontSize: 8, color: PdfColors.grey500)),
+                pw.Text('Généré le: ${DateTime.now().toString()}', style: const pw.TextStyle(fontSize: 8, color: PdfColors.grey500)),
               ],
             ),
           ),
         ),
       );
 
-      // Calcul du hash SHA-256 du PDF généré
-      final Uint8List pdfBytes = await pdf.save();
-      final digest = sha256.convert(pdfBytes);
-      final pdfHash = '0x${digest.toString()}';
+      final bytes = await pdf.save();
+      final hash = sha256.convert(bytes).toString();
 
       setState(() {
-        _pdfHash = pdfHash;
+        _pdfHash = '0x$hash';
         _generating = false;
       });
 
-      await Printing.layoutPdf(onLayout: (_) async => pdfBytes);
+      await Printing.layoutPdf(onLayout: (PdfPageFormat format) async => bytes);
     } catch (e) {
       setState(() => _generating = false);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Erreur PDF: $e')));
+      }
+    }
+  }
+
+  Future<void> _launchCeloscan(String hash) async {
+    final url = Uri.parse("https://alfajores.celoscan.io/tx/$hash");
+    if (!await launchUrl(url, mode: LaunchMode.externalApplication)) {
+      throw Exception('Could not launch $url');
     }
   }
 }
