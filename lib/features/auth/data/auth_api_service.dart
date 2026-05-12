@@ -5,11 +5,12 @@ import '../domain/auth_models.dart';
 part 'auth_api_service.freezed.dart';
 part 'auth_api_service.g.dart';
 
-/// Service API pour l'authentification - wraps Dio directement (pattern "Dio Service")
+/// Service API pour l'authentification - Implémentation manuelle pour contourner build_runner
 class AuthApiService {
   final Dio _dio;
+  final String? baseUrl;
 
-  AuthApiService(this._dio);
+  AuthApiService(this._dio, {this.baseUrl});
 
   Future<AuthResponse> login(LoginRequest request) async {
     final response = await _dio.post(

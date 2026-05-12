@@ -1,70 +1,68 @@
 import 'package:dio/dio.dart';
-import '../../transactions/domain/transaction_model.dart';
+import '../domain/transaction_model.dart';
 
-/// Service API pour les transactions - wraps Dio directement
+/// Implémentation manuelle pour contourner l'erreur retrofit_generator
 class TransactionsApiService {
   final Dio _dio;
+  final String? baseUrl;
 
-  TransactionsApiService(this._dio);
-
-  Future<BalanceResponse> getBalance(String coopId) async {
-    final resp = await _dio.get('/api/coop/$coopId/balance');
-    return BalanceResponse.fromJson(resp.data as Map<String, dynamic>);
-  }
+  TransactionsApiService(this._dio, {this.baseUrl});
 
   Future<List<Transaction>> getTransactions(
     String coopId, {
-    int page = 1,
-    int limit = 20,
+    int? page,
+    int? limit,
     String? type,
   }) async {
-    final resp = await _dio.get(
+    final response = await _dio.get(
       '/api/coop/$coopId/transactions',
       queryParameters: {
-        'page': page,
-        'limit': limit,
+        if (page != null) 'page': page,
+        if (limit != null) 'limit': limit,
         if (type != null) 'type': type,
       },
     );
-    final list = resp.data as List<dynamic>;
-    return list.map((e) => Transaction.fromJson(e as Map<String, dynamic>)).toList();
+    return (response.data as List)
+        .map((e) => Transaction.fromJson(e as Map<String, dynamic>))
+        .toList();
   }
 
-  Future<Transaction> getTransaction(String coopId, String txId) async {
-    final resp = await _dio.get('/api/coop/$coopId/transactions/$txId');
-    return Transaction.fromJson(resp.data as Map<String, dynamic>);
+  Future<Transaction> getTransaction(
+    String coopId,
+    String txId,
+  ) async {
+    final response = await _dio.get('/api/coop/$coopId/transactions/$txId');
+    return Transaction.fromJson(response.data as Map<String, dynamic>);
   }
 
-  Future<TransactionCreateResponse> createTransaction(
+  Future<TransactionResponse> recordTransaction(
     String coopId,
     Map<String, dynamic> body,
   ) async {
-    final resp = await _dio.post('/api/coop/$coopId/transactions', data: body);
-    return TransactionCreateResponse.fromJson(resp.data as Map<String, dynamic>);
+    final response = await _dio.post(
+      '/api/coop/$coopId/transactions',
+      data: body,
+    );
+    return TransactionResponse.fromJson(response.data as Map<String, dynamic>);
   }
 }
 
-class BalanceResponse {
-  final double balance;
-  final String updatedAt;
-
-  BalanceResponse({required this.balance, required this.updatedAt});
-
-  factory BalanceResponse.fromJson(Map<String, dynamic> json) => BalanceResponse(
-        balance: (json['balance'] as num).toDouble(),
-        updatedAt: json['updatedAt'] as String,
-      );
-}
-
-class TransactionCreateResponse {
+class TransactionResponse {
+  final String message;
   final String txHash;
   final Transaction transaction;
 
-  TransactionCreateResponse({required this.txHash, required this.transaction});
+  TransactionResponse({
+    required this.message,
+    required this.txHash,
+    required this.transaction,
+  });
 
-  factory TransactionCreateResponse.fromJson(Map<String, dynamic> json) =>
-      TransactionCreateResponse(
-        txHash: json['txHash'] as String,
-        transaction: Transaction.fromJson(json['transaction'] as Map<String, dynamic>),
-      );
+  factory TransactionResponse.fromJson(Map<String, dynamic> json) {
+    return TransactionResponse(
+      message: json['message'] as String,
+      txHash: json['txHash'] as String,
+      transaction: Transaction.fromJson(json['transaction'] as Map<String, dynamic>),
+    );
+  }
 }
