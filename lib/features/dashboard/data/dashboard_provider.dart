@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../../transactions/domain/transaction_model.dart';
-import '../../transactions/data/transactions_repository.dart';
+import 'coop_api_service.dart';
 import '../../auth/data/auth_provider.dart';
 
 part 'dashboard_provider.g.dart';
@@ -22,22 +22,19 @@ final currentCoopIdProvider = Provider<String>((ref) {
 @riverpod
 Future<DashboardData> dashboardData(DashboardDataRef ref) async {
   final coopId = ref.watch(currentCoopIdProvider);
-  final repo = ref.watch(transactionsRepositoryProvider);
+  final api = ref.watch(coopApiServiceProvider);
 
   ref.keepAlive();
-  Timer.periodic(const Duration(seconds: 30), (_) => ref.invalidateSelf());
+  final timer = Timer.periodic(const Duration(seconds: 30), (_) => ref.invalidateSelf());
+  ref.onDispose(() => timer.cancel());
 
-  final balance = await repo.getBalance(coopId);
-  final recentTx = await repo.getTransactions(coopId, limit: 5);
+  final balance = await api.getBalance(coopId);
+  final recentTx = await api.getTransactions(coopId, limit: 5);
+  final stats = await api.getStats(coopId);
 
   return DashboardData(
     balance: balance,
     recentTransactions: recentTx,
-    stats: {
-      'activeMembers': 120,
-      'openVotes': 2,
-      'monthlyIn': 350000.0,
-      'monthlyOut': 150000.0,
-    },
+    stats: stats,
   );
 }
