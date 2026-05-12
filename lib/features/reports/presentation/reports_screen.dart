@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../core/utils/formatters.dart';
+import '../../../shared/widgets/blockchain_badge.dart';
 import '../data/reports_provider.dart';
 
 class ReportsScreen extends ConsumerWidget {
@@ -29,7 +30,17 @@ class ReportsScreen extends ConsumerWidget {
                   child: Icon(Icons.picture_as_pdf, color: Colors.white),
                 ),
                 title: Text('Rapport - ${report.month}', style: const TextStyle(fontWeight: FontWeight.bold)),
-                subtitle: Text('Entrées: ${formatAmount(report.totalIn)}'),
+                subtitle: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Entrées: ${formatAmount(report.totalIn)}'),
+                    if (report.blockchainHash.isNotEmpty)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 4),
+                        child: BlockchainBadge(txHash: report.blockchainHash),
+                      ),
+                  ],
+                ),
                 trailing: const Icon(Icons.chevron_right),
                 onTap: () => context.go('/reports/${report.id}'),
               ),
