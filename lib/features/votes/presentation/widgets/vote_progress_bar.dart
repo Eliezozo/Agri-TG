@@ -28,7 +28,7 @@ class VoteProgressBar extends StatelessWidget {
           child: LinearProgressIndicator(
             value: forPct,
             color: AppColors.primary,
-            backgroundColor: AppColors.danger.withOpacity(0.3),
+            backgroundColor: AppColors.danger.withValues(alpha: 0.3),
             minHeight: 8,
           ),
         ),

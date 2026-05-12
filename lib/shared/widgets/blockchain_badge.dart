@@ -33,12 +33,12 @@ class BlockchainBadge extends StatelessWidget {
         decoration: BoxDecoration(
           gradient: LinearGradient(
             colors: [
-              AppColors.primary.withOpacity(0.15),
-              AppColors.primaryLight.withOpacity(0.08),
+              AppColors.primary.withValues(alpha: 0.15),
+              AppColors.primaryLight.withValues(alpha: 0.08),
             ],
           ),
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: AppColors.primary.withOpacity(0.4)),
+          border: Border.all(color: AppColors.primary.withValues(alpha: 0.4)),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
@@ -61,14 +61,14 @@ class BlockchainBadge extends StatelessWidget {
                   networkName,
                   style: TextStyle(
                     fontSize: 8,
-                    color: AppColors.primaryLight.withOpacity(0.7),
+                    color: AppColors.primaryLight.withValues(alpha: 0.7),
                   ),
                 ),
               ],
             ),
             if (tappable) ...[
               const SizedBox(width: 5),
-              Icon(Icons.open_in_new_rounded, size: 10, color: AppColors.primaryLight.withOpacity(0.7)),
+              Icon(Icons.open_in_new_rounded, size: 10, color: AppColors.primaryLight.withValues(alpha: 0.7)),
             ],
           ],
         ),

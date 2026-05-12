@@ -36,7 +36,7 @@ class BalanceCard extends StatelessWidget {
               children: [
                 Text(
                   'Mis à jour il y a 1 min · Blockchain',
-                  style: TextStyle(color: Colors.white.withOpacity(0.7), fontSize: 12),
+                  style: TextStyle(color: Colors.white.withValues(alpha: 0.7), fontSize: 12),
                 ),
                 const BlockchainBadge(),
               ],

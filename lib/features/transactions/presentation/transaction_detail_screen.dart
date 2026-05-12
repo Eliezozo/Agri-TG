@@ -64,7 +64,7 @@ class TransactionDetailScreen extends ConsumerWidget {
             const SizedBox(height: 24),
 
             // ─── Section Hash blockchain ───
-            Align(
+            const Align(
               alignment: Alignment.centerLeft,
               child: Text(
                 'Hash de la transaction',
@@ -82,7 +82,7 @@ class TransactionDetailScreen extends ConsumerWidget {
               decoration: BoxDecoration(
                 color: AppColors.bgAccent,
                 borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: AppColors.primary.withOpacity(0.2)),
+                border: Border.all(color: AppColors.primary.withValues(alpha: 0.2)),
               ),
               child: Row(
                 children: [
@@ -158,13 +158,13 @@ class TransactionDetailScreen extends ConsumerWidget {
               decoration: BoxDecoration(
                 color: AppColors.bgCard,
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: AppColors.primary.withOpacity(0.25)),
+                border: Border.all(color: AppColors.primary.withValues(alpha: 0.25)),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
-                    children: const [
+                  const Row(
+                    children: [
                       Icon(Icons.lock_outline_rounded, size: 16, color: AppColors.primaryLight),
                       SizedBox(width: 8),
                       Text(

@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../transactions/domain/transaction_model.dart';
 import '../../transactions/data/transactions_repository.dart';
 import '../../auth/data/auth_provider.dart';

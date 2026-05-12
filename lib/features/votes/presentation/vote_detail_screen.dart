@@ -103,10 +103,8 @@ class VoteDetailScreen extends ConsumerWidget {
               const SizedBox(height: 16),
               Text(vote.description, style: const TextStyle(fontSize: 16, color: AppColors.textSecondary)),
               const SizedBox(height: 24),
-              if (vote.amountThreshold != null) ...[
-                Text('Montant : ${formatAmount(vote.amountThreshold!)}', style: const TextStyle(fontWeight: FontWeight.bold)),
-                const SizedBox(height: 24),
-              ],
+              Text('Montant : ${formatAmount(vote.amountThreshold)}', style: const TextStyle(fontWeight: FontWeight.bold)),
+              const SizedBox(height: 24),
               VoteProgressBar(vote: vote),
               const SizedBox(height: 32),
 
@@ -188,21 +186,21 @@ class VoteDetailScreen extends ConsumerWidget {
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
-            AppColors.primary.withOpacity(0.12),
-            AppColors.primaryLight.withOpacity(0.05),
+            AppColors.primary.withValues(alpha: 0.12),
+            AppColors.primaryLight.withValues(alpha: 0.05),
           ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppColors.primary.withOpacity(0.35)),
+        border: Border.all(color: AppColors.primary.withValues(alpha: 0.35)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Icône + titre
-          Row(
-            children: const [
+          const Row(
+            children: [
               Icon(Icons.how_to_vote_rounded, color: AppColors.primary, size: 22),
               SizedBox(width: 10),
               Text(

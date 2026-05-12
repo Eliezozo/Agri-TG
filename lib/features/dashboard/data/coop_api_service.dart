@@ -1,18 +1,14 @@
-import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../core/api/api_client.dart';
 import '../../transactions/domain/transaction_model.dart';
 import '../../votes/domain/vote_model.dart';
 import '../../reports/domain/report_model.dart';
 
 final coopApiServiceProvider = Provider<CoopApiService>((ref) {
-  return CoopApiService(ref.watch(dioProvider));
+  return CoopApiService();
 });
 
 class CoopApiService {
-  final Dio _dio;
-
-  CoopApiService(this._dio);
+  CoopApiService();
 
   Future<double> getBalance(String coopId) async {
     // Mock for hackathon UI development
