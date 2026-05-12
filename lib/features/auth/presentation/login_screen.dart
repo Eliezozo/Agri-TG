@@ -65,12 +65,19 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   'Agri-TG',
                   style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: AppColors.primary),
                 ),
-                const SizedBox(height: 48),
+                const SizedBox(height: 8),
+                const Text(
+                  'La transparence blockchain pour nos coopératives',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
+                ),
+                const SizedBox(height: 40),
                 TextFormField(
                   controller: _phoneController,
                   keyboardType: TextInputType.phone,
                   decoration: const InputDecoration(
                     labelText: 'Numéro de téléphone',
+                    prefixIcon: Icon(Icons.phone_outlined),
                     border: OutlineInputBorder(),
                   ),
                   validator: (value) => value!.isEmpty ? 'Requis' : null,
@@ -83,6 +90,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   keyboardType: TextInputType.number,
                   decoration: const InputDecoration(
                     labelText: 'Code PIN',
+                    prefixIcon: Icon(Icons.lock_outline),
                     border: OutlineInputBorder(),
                   ),
                   validator: (value) => value!.length < 4 ? 'PIN trop court' : null,
@@ -95,12 +103,31 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     onPressed: authState.isLoading ? null : _login,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.primary,
-                      foregroundColor: AppColors.textPrimary,
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                     ),
                     child: authState.isLoading
-                        ? const CircularProgressIndicator(color: Colors.white)
-                        : const Text('Se connecter', style: TextStyle(fontSize: 16)),
+                        ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                        : const Text('Se connecter', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                   ),
+                ),
+                const SizedBox(height: 24),
+
+                // Secondary Actions reflecting the website
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    TextButton.icon(
+                      icon: const Icon(Icons.help_outline, size: 18),
+                      label: const Text('Découvrir la solution'),
+                      onPressed: () => context.push('/welcome'),
+                    ),
+                  ],
+                ),
+                TextButton.icon(
+                  icon: const Icon(Icons.token_outlined, size: 18),
+                  label: const Text('Outil blockchain (Simulateur)'),
+                  onPressed: () => context.push('/simulator'),
                 ),
               ],
             ),

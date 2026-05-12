@@ -184,94 +184,30 @@ class VoteDetailScreen extends ConsumerWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            AppColors.primary.withValues(alpha: 0.12),
-            AppColors.primaryLight.withValues(alpha: 0.05),
-          ],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
+        color: AppColors.primary.withOpacity(0.05),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppColors.primary.withValues(alpha: 0.35)),
+        border: Border.all(color: AppColors.primary.withOpacity(0.2)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Icône + titre
           const Row(
             children: [
-              Icon(Icons.how_to_vote_rounded, color: AppColors.primary, size: 22),
-              SizedBox(width: 10),
+              Icon(Icons.check_circle_outline, color: AppColors.primary, size: 20),
+              SizedBox(width: 8),
               Text(
                 'Vote enregistré',
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 15,
-                  color: AppColors.textPrimary,
-                ),
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
               ),
             ],
           ),
           const SizedBox(height: 10),
-
-          // Message d'immuabilité
           const Text(
             'Votre vote est définitivement enregistré sur la blockchain et ne peut pas être modifié.',
-            style: TextStyle(fontSize: 13, color: AppColors.textSecondary, height: 1.5),
+            style: TextStyle(fontSize: 13, color: AppColors.textSecondary, height: 1.4),
           ),
-          const SizedBox(height: 14),
-
-          // Badge blockchain avec txHash
+          const SizedBox(height: 16),
           BlockchainBadge(txHash: txHash),
-          const SizedBox(height: 12),
-
-          // Hash tronqué affiché
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
-            decoration: BoxDecoration(
-              color: AppColors.bgAccent,
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Row(
-              children: [
-                const Icon(Icons.tag_rounded, size: 13, color: AppColors.primaryLight),
-                const SizedBox(width: 6),
-                Expanded(
-                  child: Text(
-                    txHash,
-                    style: const TextStyle(
-                      fontSize: 10,
-                      fontFamily: 'monospace',
-                      color: AppColors.textSecondary,
-                    ),
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 12),
-
-          // Bouton Celoscan
-          SizedBox(
-            width: double.infinity,
-            child: OutlinedButton.icon(
-              icon: const Icon(Icons.open_in_new_rounded, size: 14),
-              label: const Text('Voir sur Celoscan', style: TextStyle(fontSize: 13)),
-              style: OutlinedButton.styleFrom(
-                foregroundColor: AppColors.primaryLight,
-                side: const BorderSide(color: AppColors.primaryLight),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-              ),
-              onPressed: () async {
-                final url = Uri.parse('https://alfajores.celoscan.io/tx/$txHash');
-                if (await canLaunchUrl(url)) {
-                  await launchUrl(url, mode: LaunchMode.externalApplication);
-                }
-              },
-            ),
-          ),
         ],
       ),
     );

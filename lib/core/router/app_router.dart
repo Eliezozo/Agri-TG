@@ -4,6 +4,8 @@ import 'package:go_router/go_router.dart';
 import 'app_routes.dart';
 import '../../features/auth/presentation/splash_screen.dart';
 import '../../features/auth/presentation/login_screen.dart';
+import '../../features/auth/presentation/welcome_screen.dart';
+import '../../features/dashboard/presentation/simulator_screen.dart';
 import '../../features/auth/presentation/coop_selection_screen.dart';
 import '../../features/auth/data/auth_provider.dart';
 import '../../features/dashboard/presentation/dashboard_screen.dart';
@@ -25,24 +27,24 @@ final routerProvider = Provider<GoRouter>((ref) {
       if (authState.isLoading) return AppRoutes.splash;
       
       final isLoggedIn = authState.value != null;
-      final isAuthRoute = state.matchedLocation.startsWith('/login') ||
-          state.matchedLocation == '/';
+      final isPublicRoute =
+          state.matchedLocation == AppRoutes.login ||
+          state.matchedLocation == AppRoutes.welcome ||
+          state.matchedLocation == AppRoutes.simulator ||
+          state.matchedLocation == AppRoutes.splash;
 
-      if (!isLoggedIn && !isAuthRoute) return AppRoutes.login;
-      if (isLoggedIn && isAuthRoute) {
-         if (state.matchedLocation == '/login' || state.matchedLocation == '/') {
-            return AppRoutes.coopSelect;
-         }
+      if (!isLoggedIn && !isPublicRoute) return AppRoutes.login;
+      if (isLoggedIn && (state.matchedLocation == AppRoutes.login || state.matchedLocation == AppRoutes.splash)) {
+        return AppRoutes.coopSelect;
       }
       
-      if (state.matchedLocation == '/' && !authState.isLoading && !isLoggedIn) {
-        return AppRoutes.login;
-      }
       return null;
     },
     routes: [
       GoRoute(path: AppRoutes.splash, builder: (_, __) => const SplashScreen()),
       GoRoute(path: AppRoutes.login, builder: (_, __) => const LoginScreen()),
+      GoRoute(path: AppRoutes.welcome, builder: (_, __) => const WelcomeScreen()),
+      GoRoute(path: AppRoutes.simulator, builder: (_, __) => const BlockchainSimulatorScreen()),
       GoRoute(path: AppRoutes.coopSelect, builder: (_, __) => const CoopSelectionScreen()),
       ShellRoute(
         builder: (context, state, child) => AppScaffold(child: child),

@@ -1,6 +1,8 @@
 abstract class AppRoutes {
   static const String splash       = '/';
   static const String login        = '/login';
+  static const String welcome      = '/welcome';
+  static const String simulator    = '/simulator';
   static const String pinSetup     = '/pin-setup';
   static const String coopSelect   = '/coop-selection';
   static const String dashboard    = '/dashboard';
