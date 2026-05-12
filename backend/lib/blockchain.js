@@ -1,5 +1,6 @@
 require('dotenv').config();
 const { ethers } = require('ethers');
+const crypto = require('crypto');
 
 // Variables d'environnement
 const {
@@ -18,24 +19,24 @@ if (!RPC_URL || !PRIVATE_KEY) {
 const provider = new ethers.JsonRpcProvider(RPC_URL);
 const wallet = new ethers.Wallet(PRIVATE_KEY || '0x0000000000000000000000000000000000000000000000000000000000000000', provider);
 
-// ABIs simplifiés
+// ABIs mis à jour pour correspondre aux contrats raffinés
 const COOP_LEDGER_ABI = [
-  "function recordTransaction(uint256 id, string txType, uint256 amount, address member, uint256 date, string description) external"
+  "function recordTransaction(uint256 id, string _type, uint256 _montant, address _membre, uint256 _date, string _description) external"
 ];
 
 const VOTE_GOVERNANCE_ABI = [
-  "function castVote(uint256 voteId, uint8 choice) external",
-  "function getResults(uint256 voteId) external view returns (uint256 yesVotes, uint256 noVotes)"
+  "function castVote(uint256 voteId, uint8 choice, address memberAddress) external",
+  "function getResults(uint256 voteId) external view returns (uint256 pour, uint256 contre, uint256 abstention)"
 ];
 
 const REPORT_ANCHOR_ABI = [
-  "function anchorReport(string month, bytes32 pdfHash) external"
+  "function anchorReport(string _month, bytes32 pdfHash) external"
 ];
 
 // Instanciation des contrats
-const coopLedger = new ethers.Contract(COOP_LEDGER_ADDRESS, COOP_LEDGER_ABI, wallet);
-const voteGovernance = new ethers.Contract(VOTE_GOVERNANCE_ADDRESS, VOTE_GOVERNANCE_ABI, wallet);
-const reportAnchor = new ethers.Contract(REPORT_ANCHOR_ADDRESS, REPORT_ANCHOR_ABI, wallet);
+const coopLedger = new ethers.Contract(COOP_LEDGER_ADDRESS || ethers.ZeroAddress, COOP_LEDGER_ABI, wallet);
+const voteGovernance = new ethers.Contract(VOTE_GOVERNANCE_ADDRESS || ethers.ZeroAddress, VOTE_GOVERNANCE_ABI, wallet);
+const reportAnchor = new ethers.Contract(REPORT_ANCHOR_ADDRESS || ethers.ZeroAddress, REPORT_ANCHOR_ABI, wallet);
 
 /**
  * Enregistre une transaction sur la blockchain
@@ -45,7 +46,6 @@ async function recordTx(type, amount, memberAddress, description) {
     const txId = Math.floor(Date.now() / 1000) + Math.floor(Math.random() * 10000);
     const date = Math.floor(Date.now() / 1000);
     
-    // address check
     if (!ethers.isAddress(memberAddress)) {
       throw new Error("Adresse membre invalide");
     }
@@ -53,7 +53,7 @@ async function recordTx(type, amount, memberAddress, description) {
     const tx = await coopLedger.recordTransaction(
       txId,
       type,
-      ethers.parseUnits(amount.toString(), 18), // Supposons 18 décimales
+      ethers.parseUnits(amount.toString(), 18),
       memberAddress,
       date,
       description
@@ -63,25 +63,25 @@ async function recordTx(type, amount, memberAddress, description) {
     return receipt.hash;
   } catch (error) {
     console.error("Erreur blockchain (recordTx):", error);
-    throw new Error("Échec de l'enregistrement de la transaction sur la blockchain.");
+    throw new Error("Échec de l'enregistrement de la transaction sur la blockchain : " + error.message);
   }
 }
 
 /**
- * Enregistre un vote sur la blockchain
- * Note: Le contrat actuel utilise msg.sender. Si le backend vote au nom de l'utilisateur,
- * le contrat doit être adapté pour accepter l'adresse du membre.
+ * Enregistre un vote sur la blockchain au nom d'un membre
  */
 async function castVote(voteId, choice, memberAddress) {
   try {
-    // Par défaut on envoie le choix au contrat.
-    // Si une évolution du contrat inclut l'adresse, on pourra la passer ici.
-    const tx = await voteGovernance.castVote(voteId, choice);
+    if (!ethers.isAddress(memberAddress)) {
+      throw new Error("Adresse membre invalide");
+    }
+
+    const tx = await voteGovernance.castVote(voteId, choice, memberAddress);
     const receipt = await tx.wait();
     return receipt.hash;
   } catch (error) {
     console.error("Erreur blockchain (castVote):", error);
-    throw new Error("Échec de la soumission du vote sur la blockchain.");
+    throw new Error("Échec de la soumission du vote sur la blockchain : " + error.message);
   }
 }
 
@@ -90,13 +90,14 @@ async function castVote(voteId, choice, memberAddress) {
  */
 async function anchorReport(month, pdfBuffer) {
   try {
-    const pdfHash = ethers.sha256(pdfBuffer);
+    // Utilisation de SHA256 (via crypto) comme demandé
+    const pdfHash = "0x" + crypto.createHash('sha256').update(pdfBuffer).digest('hex');
     const tx = await reportAnchor.anchorReport(month, pdfHash);
     const receipt = await tx.wait();
     return { txHash: receipt.hash, pdfHash };
   } catch (error) {
     console.error("Erreur blockchain (anchorReport):", error);
-    throw new Error("Échec de l'ancrage du rapport sur la blockchain.");
+    throw new Error("Échec de l'ancrage du rapport sur la blockchain : " + error.message);
   }
 }
 
@@ -105,17 +106,16 @@ async function anchorReport(month, pdfBuffer) {
  */
 async function getVoteResults(voteId) {
   try {
-    const [yesVotes, noVotes] = await voteGovernance.getResults(voteId);
+    const [pour, contre, abstention] = await voteGovernance.getResults(voteId);
     
-    // On mappe yesVotes à "for" et noVotes à "against", et "abstain" à 0 car non géré dans le SC actuel
     return {
-      for: Number(yesVotes),
-      against: Number(noVotes),
-      abstain: 0
+      for: Number(pour),
+      against: Number(contre),
+      abstain: Number(abstention)
     };
   } catch (error) {
     console.error("Erreur blockchain (getVoteResults):", error);
-    throw new Error("Impossible de récupérer les résultats du vote.");
+    throw new Error("Impossible de récupérer les résultats du vote : " + error.message);
   }
 }
 

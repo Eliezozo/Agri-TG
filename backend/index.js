@@ -11,10 +11,11 @@ app.use(express.json());
 const JWT_SECRET = process.env.JWT_SECRET || 'supersecret';
 
 // --- MOCK DATABASE ---
-// Pour la démonstration, on simule une base de données
 const db = {
   transactions: [],
-  votes: [],
+  votes: [
+    { id: "0", title: "Achat de tracteur", status: "open", closingDate: new Date(Date.now() + 86400000).toISOString() }
+  ],
   reports: []
 };
 
@@ -30,7 +31,6 @@ const db = {
 app.post('/auth/login', (req, res) => {
   const { phone, pin } = req.body;
   
-  // Validation simulée
   if (phone === '123456789' && pin === '1234') {
     const member = {
       memberId: 'mem_001',
@@ -41,7 +41,11 @@ app.post('/auth/login', (req, res) => {
     };
 
     const token = jwt.sign(
-      { memberId: member.memberId, role: member.role },
+      {
+        memberId: member.memberId,
+        role: member.role,
+        walletAddress: member.walletAddress
+      },
       JWT_SECRET,
       { expiresIn: '24h' }
     );
@@ -62,7 +66,6 @@ app.use('/api', authMiddleware);
  * GET /api/coop/:id/balance
  */
 app.get('/api/coop/:id/balance', (req, res) => {
-  // Simule une balance récupérée depuis la BD
   return res.json({
     balance: 15000,
     updatedAt: new Date().toISOString()
@@ -71,7 +74,6 @@ app.get('/api/coop/:id/balance', (req, res) => {
 
 /**
  * GET /api/coop/:id/transactions
- * @query page, limit, type
  */
 app.get('/api/coop/:id/transactions', (req, res) => {
   const { page = 1, limit = 10, type } = req.query;
@@ -81,7 +83,6 @@ app.get('/api/coop/:id/transactions', (req, res) => {
     txs = txs.filter(tx => tx.type === type);
   }
 
-  // Pagination basique simulée
   const start = (page - 1) * limit;
   const paginated = txs.slice(start, start + Number(limit));
 
@@ -107,12 +108,14 @@ app.get('/api/coop/:id/transactions/:txId', (req, res) => {
 app.post('/api/coop/:id/transactions', async (req, res) => {
   try {
     const { type, amount, description } = req.body;
-    const memberAddress = "0x0000000000000000000000000000000000000000"; // En vrai, récupérer via req.member depuis la DB
+    const memberAddress = req.member.walletAddress;
 
-    // 1. Enregistrement sur la blockchain
+    if (!memberAddress) {
+      return res.status(400).json({ error: "Adresse de wallet du membre manquante" });
+    }
+
     const txHash = await blockchain.recordTx(type, amount, memberAddress, description);
 
-    // 2. Enregistrement en base de données
     const newTx = {
       id: `tx_${Date.now()}`,
       coopId: req.params.id,
@@ -151,19 +154,20 @@ app.post('/api/coop/:id/votes/:voteId/cast', async (req, res) => {
     const { voteId } = req.params;
     const { choice } = req.body;
     
-    // Par convention, 1=Pour, 2=Contre. (Doit être un entier > 0)
     const choiceInt = Number(choice);
-    if (!choiceInt || choiceInt <= 0) {
-      return res.status(400).json({ error: "Choix invalide." });
+    if (!choiceInt || choiceInt < 1 || choiceInt > 3) {
+      return res.status(400).json({ error: "Choix invalide (1=Pour, 2=Contre, 3=Abstention)." });
     }
 
-    const memberAddress = "0x0000000000000000000000000000000000000000"; // Récupéré de la DB
+    const memberAddress = req.member.walletAddress;
+    if (!memberAddress) {
+      return res.status(400).json({ error: "Adresse de wallet du membre manquante" });
+    }
 
-    // Appel à la blockchain
     const txHash = await blockchain.castVote(voteId, choiceInt, memberAddress);
 
     return res.json({ 
-      message: "A voté avec succès", 
+      message: "Vote enregistré avec succès sur la blockchain",
       txHash 
     });
   } catch (error) {
@@ -190,14 +194,10 @@ app.post('/api/coop/:id/reports/:month/anchor', async (req, res) => {
   try {
     const { month } = req.params;
     
-    // 1. Simulation de la génération d'un PDF
-    // En conditions réelles, utiliser pdfkit, puppeteer, etc.
     const mockPdfBuffer = Buffer.from(`Report for ${month}`);
 
-    // 2. Ancrage sur la blockchain
     const { txHash, pdfHash } = await blockchain.anchorReport(month, mockPdfBuffer);
 
-    // 3. Enregistrement en DB
     const newReport = {
       month,
       pdfHash,
@@ -216,9 +216,6 @@ app.post('/api/coop/:id/reports/:month/anchor', async (req, res) => {
   }
 });
 
-// ==========================================
-// DÉMARRAGE DU SERVEUR
-// ==========================================
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`Backend server running on port ${PORT}`);

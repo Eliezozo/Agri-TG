@@ -4,7 +4,7 @@ const JWT_SECRET = process.env.JWT_SECRET || 'supersecret';
 
 /**
  * Middleware d'authentification pour vérifier le token JWT
- * Extrait memberId et role du payload et les assigne à req.member
+ * Extrait memberId, role et walletAddress du payload et les assigne à req.member
  */
 function authMiddleware(req, res, next) {
   const authHeader = req.headers.authorization;
@@ -18,10 +18,11 @@ function authMiddleware(req, res, next) {
   try {
     const decoded = jwt.verify(token, JWT_SECRET);
     
-    // Extrait memberId et role et les met dans req.member
+    // Extrait memberId, role et walletAddress et les met dans req.member
     req.member = {
       memberId: decoded.memberId,
-      role: decoded.role
+      role: decoded.role,
+      walletAddress: decoded.walletAddress
     };
     
     next();

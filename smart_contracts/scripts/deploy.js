@@ -1,7 +1,7 @@
 import hre from "hardhat";
 
 async function main() {
-  console.log("Starting deployment...");
+  console.log("Starting deployment on network:", hre.network.name);
 
   // Deploy CoopLedger
   const CoopLedger = await hre.ethers.getContractFactory("CoopLedger");
@@ -25,6 +25,7 @@ async function main() {
   console.log(`ReportAnchor deployed to: ${reportAnchorAddress}`);
 
   console.log("\n--- Deployment Summary ---");
+  console.log("RPC URL:", hre.network.config.url);
   console.log("CoopLedger Address:", coopLedgerAddress);
   console.log("VoteGovernance Address:", voteGovernanceAddress);
   console.log("ReportAnchor Address:", reportAnchorAddress);
