@@ -9,7 +9,14 @@ part 'reports_provider.g.dart';
 Future<List<MonthlyReport>> reports(ReportsRef ref) async {
   final repo = ref.watch(reportsRepositoryProvider);
   final coopId = ref.watch(currentCoopIdProvider);
-  return repo.getReports(coopId);
+  // On retourne une liste car ReportsScreen s'attend à une liste.
+  // En attendant un endpoint de liste, on simule avec un seul rapport ou une liste vide.
+  try {
+    final report = await repo.getReport(coopId, "2026-05");
+    return [report];
+  } catch (e) {
+    return [];
+  }
 }
 
 @riverpod

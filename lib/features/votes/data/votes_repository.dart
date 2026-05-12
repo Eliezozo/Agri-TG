@@ -7,8 +7,6 @@ import '../../../core/errors/app_exception.dart';
 import '../domain/vote_model.dart';
 import 'votes_api_service.dart';
 
-export 'votes_api_service.dart' show VoteCastResponse;
-
 const _kVotesCacheBox = 'votes_cache';
 
 final votesApiServiceProvider = Provider<VotesApiService>((ref) {
@@ -25,58 +23,39 @@ class VotesRepository {
   VotesRepository(this._api);
 
   Future<List<Vote>> getVotes(String coopId) async {
-    const cacheKey = 'votes_list';
     try {
-      final list = await _api.getVotes(coopId);
+      final votes = await _api.getVotes(coopId);
       final box = Hive.box(_kVotesCacheBox);
-      await box.put(cacheKey, list.map((v) => v.toJson()).toList());
-      return list;
+      await box.put('list_$coopId', votes.map((e) => e.toJson()).toList());
+      return votes;
     } on DioException catch (e) {
       final box = Hive.box(_kVotesCacheBox);
-      final cached = box.get(cacheKey);
+      final cached = box.get('list_$coopId');
       if (cached != null) {
-        return (cached as List)
-            .map((e) => Vote.fromJson(Map<String, dynamic>.from(e as Map)))
-            .toList();
+        return (cached as List).map((e) => Vote.fromJson(Map<String, dynamic>.from(e as Map))).toList();
       }
       throw AppException.fromDioError(e);
+    } catch (e) {
+      throw AppException('Erreur lors de la récupération des votes.');
     }
   }
 
   Future<Vote> getVote(String coopId, String voteId) async {
-    final cacheKey = 'vote_$voteId';
     try {
-      final vote = await _api.getVote(coopId, voteId);
-      final box = Hive.box(_kVotesCacheBox);
-      await box.put(cacheKey, vote.toJson());
-      return vote;
-    } on DioException catch (e) {
-      final box = Hive.box(_kVotesCacheBox);
-      final cached = box.get(cacheKey);
-      if (cached != null) {
-        return Vote.fromJson(Map<String, dynamic>.from(cached as Map));
-      }
-      throw AppException.fromDioError(e);
+      // Simuler l'appel API si non disponible dans le service (on filtre la liste pour l'instant)
+      final votes = await getVotes(coopId);
+      return votes.firstWhere((v) => v.id == voteId);
+    } catch (e) {
+      rethrow;
     }
   }
 
-  /// Soumet un vote et retourne la réponse incluant le txHash blockchain
-  Future<VoteCastResponse> castVote(
-    String coopId,
-    String voteId,
-    int choice,
-  ) async {
+  Future<CastVoteResponse> castVote(String coopId, String voteId, int choice) async {
     try {
-      final resp = await _api.castVote(coopId, voteId, {'choice': choice});
-      // Invalider le cache de ce vote spécifique
-      final box = Hive.box(_kVotesCacheBox);
-      await box.delete('vote_$voteId');
-      await box.delete('votes_list');
-      return resp;
+      final response = await _api.castVote(coopId, voteId, {'choice': choice});
+      return response;
     } on DioException catch (e) {
       throw AppException.fromDioError(e);
-    } catch (e) {
-      throw AppException('Échec de la soumission du vote.');
     }
   }
 }

@@ -33,9 +33,8 @@ class AuthRepository {
   Future<CoopMember> login(String phone, String pin) async {
     try {
       final response = await _api.login(LoginRequest(phone: phone, pin: pin));
-      // Persiste le token de façon sécurisée
       await _storage.write(key: 'jwt_token', value: response.token);
-      // Cache le profil membre dans Hive
+
       final box = Hive.box('auth_cache');
       await box.put(_kMemberCacheKey, response.member.toJson());
       return response.member;
@@ -53,13 +52,19 @@ class AuthRepository {
       await box.put(_kMemberCacheKey, member.toJson());
       return member;
     } on DioException catch (e) {
-      // Retourne le cache si disponible
       final box = Hive.box('auth_cache');
       final cached = box.get(_kMemberCacheKey);
       if (cached != null) {
         return CoopMember.fromJson(Map<String, dynamic>.from(cached as Map));
       }
       throw AppException.fromDioError(e);
+    } catch (e) {
+      final box = Hive.box('auth_cache');
+      final cached = box.get(_kMemberCacheKey);
+      if (cached != null) {
+        return CoopMember.fromJson(Map<String, dynamic>.from(cached as Map));
+      }
+      throw AppException('Erreur de profil inattendue.');
     }
   }
 

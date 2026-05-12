@@ -11,6 +11,7 @@ class ErrorInterceptor extends Interceptor {
   @override
   void onError(DioException err, ErrorInterceptorHandler handler) {
     final appException = AppException.fromDioError(err);
+    // On passe l'erreur transformée au prochain intercepteur ou au catch final
     handler.next(
       DioException(
         requestOptions: err.requestOptions,
@@ -26,9 +27,12 @@ class ErrorInterceptor extends Interceptor {
 final dioProvider = Provider<Dio>((ref) {
   final dio = Dio(BaseOptions(
     baseUrl: AppConfig.apiBaseUrl,
-    connectTimeout: const Duration(seconds: 10),
-    receiveTimeout: const Duration(seconds: 10),
-    headers: {'Content-Type': 'application/json'},
+    connectTimeout: const Duration(seconds: 15),
+    receiveTimeout: const Duration(seconds: 15),
+    headers: {
+      'Content-Type': 'application/json',
+      'Accept': 'application/json',
+    },
   ));
 
   dio.interceptors.add(ref.read(authInterceptorProvider));
@@ -39,8 +43,10 @@ final dioProvider = Provider<Dio>((ref) {
     dio.interceptors.add(PrettyDioLogger(
       requestHeader: true,
       requestBody: true,
+      responseHeader: true,
       responseBody: true,
       error: true,
+      compact: true,
     ));
   }
 
