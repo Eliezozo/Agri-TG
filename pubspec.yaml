@@ -75,6 +75,7 @@ dependencies:
   json_annotation: ^4.9.0
   infinite_scroll_pagination: ^5.1.1
   url_launcher: ^6.3.2
+  crypto: ^3.0.7
 
 dev_dependencies:
   flutter_test:

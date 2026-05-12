@@ -49,7 +49,6 @@ class VoteDetailScreen extends ConsumerWidget {
         ),
       );
     } else {
-      // Affiche une erreur si le vote a échoué
       final error = ref.read(voteCasterProvider).error;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -69,6 +68,7 @@ class VoteDetailScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final voteAsync = ref.watch(voteDetailProvider(id));
     final voteCasterState = ref.watch(voteCasterProvider);
+    final voteResult = voteCasterState.valueOrNull;
 
     return Scaffold(
       appBar: AppBar(title: const Text('Détails du vote')),
@@ -78,16 +78,25 @@ class VoteDetailScreen extends ConsumerWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: vote.status == 'open' ? AppColors.primary : AppColors.textMuted,
-                  borderRadius: BorderRadius.circular(4),
-                ),
-                child: Text(
-                  vote.status == 'open' ? 'Ouvert' : 'Clôturé',
-                  style: const TextStyle(fontSize: 10, color: Colors.white, fontWeight: FontWeight.bold),
-                ),
+              // Statut du vote
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: vote.status == 'open' ? AppColors.primary : AppColors.textMuted,
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: Text(
+                      vote.status == 'open' ? 'Ouvert' : 'Clôturé',
+                      style: const TextStyle(fontSize: 10, color: Colors.white, fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                  const Spacer(),
+                  // Badge blockchain si déjà voté et txHash disponible
+                  if (voteResult != null)
+                    BlockchainBadge(txHash: voteResult.txHash),
+                ],
               ),
               const SizedBox(height: 16),
               Text(vote.title, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
@@ -100,7 +109,15 @@ class VoteDetailScreen extends ConsumerWidget {
               ],
               VoteProgressBar(vote: vote),
               const SizedBox(height: 32),
-              if (vote.status == 'open') ...[
+
+              // ─── Confirmation de vote enregistré ───
+              if (voteResult != null) ...[
+                _buildVoteConfirmation(context, voteResult.txHash),
+                const SizedBox(height: 24),
+              ],
+
+              // ─── Boutons de vote ───
+              if (vote.status == 'open' && voteResult == null) ...[
                 const Text('Votre choix', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
                 const SizedBox(height: 16),
                 Row(
@@ -110,6 +127,7 @@ class VoteDetailScreen extends ConsumerWidget {
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppColors.primary,
                           foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                         ),
                         onPressed: voteCasterState.isLoading
                             ? null
@@ -120,7 +138,7 @@ class VoteDetailScreen extends ConsumerWidget {
                                 width: 18,
                                 child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
                               )
-                            : const Text('Pour'),
+                            : const Text('Pour ✓'),
                       ),
                     ),
                     const SizedBox(width: 12),
@@ -129,11 +147,12 @@ class VoteDetailScreen extends ConsumerWidget {
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppColors.danger,
                           foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                         ),
                         onPressed: voteCasterState.isLoading
                             ? null
                             : () => _onCastVote(context, ref, 'against'),
-                        child: const Text('Contre'),
+                        child: const Text('Contre ✗'),
                       ),
                     ),
                   ],
@@ -142,6 +161,9 @@ class VoteDetailScreen extends ConsumerWidget {
                 SizedBox(
                   width: double.infinity,
                   child: OutlinedButton(
+                    style: OutlinedButton.styleFrom(
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    ),
                     onPressed: voteCasterState.isLoading
                         ? null
                         : () => _onCastVote(context, ref, 'abstain'),
@@ -149,13 +171,110 @@ class VoteDetailScreen extends ConsumerWidget {
                   ),
                 ),
               ],
+
               const SizedBox(height: 32),
-              const Center(child: BlockchainBadge()),
             ],
           ),
         ),
         loading: () => const Center(child: CircularProgressIndicator(color: AppColors.primary)),
         error: (e, _) => Center(child: Text('Erreur: $e')),
+      ),
+    );
+  }
+
+  Widget _buildVoteConfirmation(BuildContext context, String txHash) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            AppColors.primary.withOpacity(0.12),
+            AppColors.primaryLight.withOpacity(0.05),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: AppColors.primary.withOpacity(0.35)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Icône + titre
+          Row(
+            children: const [
+              Icon(Icons.how_to_vote_rounded, color: AppColors.primary, size: 22),
+              SizedBox(width: 10),
+              Text(
+                'Vote enregistré',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 15,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+
+          // Message d'immuabilité
+          const Text(
+            'Votre vote est définitivement enregistré sur la blockchain et ne peut pas être modifié.',
+            style: TextStyle(fontSize: 13, color: AppColors.textSecondary, height: 1.5),
+          ),
+          const SizedBox(height: 14),
+
+          // Badge blockchain avec txHash
+          BlockchainBadge(txHash: txHash),
+          const SizedBox(height: 12),
+
+          // Hash tronqué affiché
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+            decoration: BoxDecoration(
+              color: AppColors.bgAccent,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Row(
+              children: [
+                const Icon(Icons.tag_rounded, size: 13, color: AppColors.primaryLight),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    txHash,
+                    style: const TextStyle(
+                      fontSize: 10,
+                      fontFamily: 'monospace',
+                      color: AppColors.textSecondary,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 12),
+
+          // Bouton Celoscan
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              icon: const Icon(Icons.open_in_new_rounded, size: 14),
+              label: const Text('Voir sur Celoscan', style: TextStyle(fontSize: 13)),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: AppColors.primaryLight,
+                side: const BorderSide(color: AppColors.primaryLight),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              ),
+              onPressed: () async {
+                final url = Uri.parse('https://alfajores.celoscan.io/tx/$txHash');
+                if (await canLaunchUrl(url)) {
+                  await launchUrl(url, mode: LaunchMode.externalApplication);
+                }
+              },
+            ),
+          ),
+        ],
       ),
     );
   }
